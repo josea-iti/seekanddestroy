@@ -11,20 +11,22 @@ public class SeekAndDestroy {
     private File ruta_inicial = null;
     private long contador_ficheros = 0;
     private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private ComparatorIF<String> comparador = new ComparatorInteger<String>();
-    private ArrayList<String> vector = new ArrayList<String>();
+    private ArrayList<Archivo> vector = new ArrayList<Archivo>();
     private boolean orden = true;     //true=ascendiente ; false=descenciente
 
     public static void main(String[] args) {
         SeekAndDestroy fd = new SeekAndDestroy();
+        File ruta;
         if (args.length != 0) {
-            File ruta = new File(args[0]);
-            if (ruta.exists()) {
-                fd.setRutaInicial(ruta);
-                fd.procesar();
-            }
+            ruta = new File(args[0]);
+        } else {
+            ruta = new File("/home/josea/root/programacio/pruebas/seekanddestroy");
         }
-		System.exit(0);
+        if (ruta.exists()) {
+            fd.setRutaInicial(ruta);
+            fd.procesar();
+        }
+    	System.exit(0);
     }
     
     void setRutaInicial(File ruta) {
@@ -52,26 +54,23 @@ public class SeekAndDestroy {
                                    archivos[i].getAbsolutePath();
                     contador_ficheros += 1;
                     grabar(FICHERO_LISTADO, linea, contador_ficheros > 1);
-                    vector.add(linea);
+                    Archivo a = new Archivo(archivos[i].getName(), archivos[i].length(), archivos[i].lastModified(), archivos[i].getAbsolutePath());
+                    vector.add(a);
                 }
             }
         }
     }
 
     void ordenar_ficheros() {
-
-        /*   TO  DO   */
- 
-        /*
-        SortIF<String> algoritmo = new HeapSort<String>();
-        ArrayList<String> vectorOrdenado = algoritmo.sort(vector, comparador, orden);
+        ComparatorIF<Archivo> comparador = new ComparatorArchivo<Archivo>();
+        orden = true;
+        SortIF<Archivo> algoritmo = new HeapSort<Archivo>();
+        ArrayList<Archivo> vectorOrdenado = algoritmo.sort(vector, comparador, orden);
         contador_ficheros = 0;
-		for (String s: vectorOrdenado) {
+		for (Archivo a: vectorOrdenado) {
             contador_ficheros += 1;
-            grabar(FICHERO_ORDENADO, s, contador_ficheros > 1);
+            grabar(FICHERO_ORDENADO, a.toString(), contador_ficheros > 1);
 		}
-        */
-
     }
 
     void quitar_NO_repetidos() {
