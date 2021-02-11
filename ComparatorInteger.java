@@ -11,9 +11,9 @@ public class ComparatorInteger<T> extends ComparatorBase<T> {
 	 * @return el orden de los elementos. 
 	 */
 	@Override
-	public int compare (T i1, T i2) {
-		Integer int1 = (Integer) i1;
-		Integer int2 = (Integer) i2;
+	public int compare (T e1, T e2) {
+		Integer int1 = (Integer) e1;
+		Integer int2 = (Integer) e2;
 		if (int1 == int2) return ComparatorIF.EQUAL;
 		if (int1 > int2) return ComparatorIF.GREATER;
 		if (int1 < int2) return ComparatorIF.LESS;

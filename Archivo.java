@@ -26,6 +26,10 @@ public class Archivo {
 		return this.nombre;
 	}
 
+	public long getLongitud() {
+		return this.longitud;
+	}
+
 	@Override
 	public int hashCode() {
 		return (this.ruta + this.nombre).hashCode();

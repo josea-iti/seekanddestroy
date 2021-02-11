@@ -6,14 +6,19 @@ import java.util.*;
 public class SeekAndDestroy {
 
     private String RUTAFICHEROS = "";
-    private String FICHERO_LISTADO = "fichero_listado.csv";
-    private String FICHERO_ORDENADO = "fichero_ordenado.csv";
-    private String FICHERO_DUPLICADOS = "fichero_duplicados.csv";
+    private String FICHERO_LISTADO = "testing/fichero_listado.csv";
+    private String FICHERO_ORDENADO = "testing/fichero_ordenado.csv";
+    private String FICHERO_DUPLICADOS = "testing/fichero_duplicados.csv";
     private File ruta_inicial = null;
     private long contador_ficheros = 0;
-    private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    private SimpleDateFormat sdf = null;
     private ArrayList<Archivo> vector = new ArrayList<Archivo>();
     private ArrayList<Archivo> vector_ordenado = new ArrayList<Archivo>();
+    private ArrayList<Archivo> vector_duplicados = new ArrayList<Archivo>();
+    private ArrayList<Archivo> vector_final = new ArrayList<Archivo>();
+    private SortIF<Archivo> algoritmo = null;
+    private ComparatorIF<Archivo> comparador_xNombre = null;
+    private ComparatorIF<Archivo> comparador_xLongitud = null;
     private boolean orden = true; // true=ascendiente ; false=descenciente
 
     public static void main(String[] args) {
@@ -25,28 +30,62 @@ public class SeekAndDestroy {
             ruta = new File("/media/josea/TOSHIBA EXT");
         }
         if (ruta.exists()) {
-            fd.setRutaInicial(ruta);
+            fd.setEstadoInicial(ruta);
             fd.procesar();
         }
         System.exit(0);
     }
 
-    void setRutaInicial(File ruta) {
+    void setEstadoInicial(File ruta) {
         this.ruta_inicial = ruta;
+
+        this.algoritmo = new HeapSort<Archivo>();
+        this.comparador_xNombre = new ComparatorNombre<Archivo>();
+        this.comparador_xLongitud = new ComparatorLongitud<Archivo>();
+
+        this.sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+
     }
 
     void procesar() {
-        contador_ficheros = 0;
-        listar_ficheros(ruta_inicial);
-        ordenar_ficheros();
-        cargar_duplicados();
-    }
 
-    void listar_ficheros(File ruta) {
+        contador_ficheros = 0;
         long millis = System.currentTimeMillis();
         contador_ficheros += 1;
         grabar(FICHERO_LISTADO, Long.toString(millis), contador_ficheros > 1);
 
+/*
+ *  Leer ficheros en la ruta solicitada.
+ */
+        listar_ficheros(ruta_inicial);
+
+/*
+ * Ordenar ficheros leidos por nombre.
+ */
+        ordenar_xNombre();
+
+/*
+ * Localiza ficheros duplicados y los separa en un array.
+ */
+        localizar_duplicados();
+
+/*
+ * Ordenar ficheros duplicados por longitud.
+ */
+        ordenar_xLongitud();
+
+/*
+ * Salvar ficheros duplicados en un fichero csv.
+ */
+        cargar_duplicados();
+
+        millis = System.currentTimeMillis();
+        contador_ficheros += 1;
+        grabar(FICHERO_LISTADO, Long.toString(millis), contador_ficheros > 1);
+
+    }
+
+    void listar_ficheros(File ruta) {
         File[] archivos = ruta.listFiles();
 //      File[] archivos = ruta.listFiles(filtro);
         if (archivos.length > 0) {
@@ -54,12 +93,6 @@ public class SeekAndDestroy {
                 if (archivos[i].isDirectory()) {
                     listar_ficheros(archivos[i]);
                 } else {
-//                    String linea = archivos[i].getName() + ";" + 
-//                                   archivos[i].length() + ";" + 
-//                                   sdf.format(archivos[i].lastModified()) + ";" +
-//                                   archivos[i].getAbsolutePath();
-//                    contador_ficheros += 1;
-//                    grabar(FICHERO_LISTADO, linea, contador_ficheros > 1);
                     Archivo a = new Archivo(archivos[i].getName(), archivos[i].length(), archivos[i].lastModified(), archivos[i].getAbsolutePath());
                     vector.add(a);
                 }
@@ -67,49 +100,38 @@ public class SeekAndDestroy {
         }
     }
 
-    void ordenar_ficheros() {
-
-        long millis = System.currentTimeMillis();
-        contador_ficheros += 1;
-        grabar(FICHERO_LISTADO, Long.toString(millis), contador_ficheros > 1);
-
-
-
-        ComparatorIF<Archivo> comparador = new ComparatorArchivo<Archivo>();
+    void ordenar_xNombre() {
         orden = true;
-        SortIF<Archivo> algoritmo = new HeapSort<Archivo>();
-        vector_ordenado = algoritmo.sort(vector, comparador, orden);
-
-        millis = System.currentTimeMillis();
-        contador_ficheros += 1;
-        grabar(FICHERO_LISTADO, Long.toString(millis), contador_ficheros > 1);
-
-
-//        contador_ficheros = 0;
-//		for (Archivo a: vector_ordenado) {
-//            contador_ficheros += 1;
-//            grabar(FICHERO_ORDENADO, a.toString(), contador_ficheros > 1);
-//		}
+        vector_ordenado = algoritmo.sort(vector, comparador_xNombre, orden);
     }
 
-    void cargar_duplicados() {
-
+    void localizar_duplicados() {
         Archivo anterior = new Archivo();
-
-        contador_ficheros = 0;
+        boolean tmp = false;
 		for (Archivo a: vector_ordenado) {
             if (a.equals(anterior)) {
-                contador_ficheros += 1;
-                grabar(FICHERO_DUPLICADOS, anterior.toString(), contador_ficheros > 1);
-                contador_ficheros += 1;
-                grabar(FICHERO_DUPLICADOS, a.toString(), contador_ficheros > 1);
+                if (!tmp) {
+                    vector_duplicados.add(anterior);
+                    tmp = true;
+                }
+                vector_duplicados.add(a);
+            } else {
+                tmp = false;
             }
             anterior = a;
 		}
+    }
 
-        long millis = System.currentTimeMillis();
-        contador_ficheros += 1;
-        grabar(FICHERO_DUPLICADOS, Long.toString(millis), contador_ficheros > 1);
+    void ordenar_xLongitud() {
+        orden = false;
+        vector_final = algoritmo.sort(vector_duplicados, comparador_xLongitud, orden);
+    }
+    
+    void cargar_duplicados() {
+		for (Archivo a: vector_final) {
+            contador_ficheros += 1;
+            grabar(FICHERO_DUPLICADOS, a.toString(), contador_ficheros > 1);
+		}
     }
     
     private void grabar(String nombre_fichero, String linea, boolean append) {
